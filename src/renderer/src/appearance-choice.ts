@@ -22,6 +22,7 @@ import { applyAppFonts } from "./app-fonts";
 import { appPort } from "./app-port";
 import { applyChatBackground } from "./chat-background";
 import { syncColorScheme } from "./color-scheme";
+import { syncIconColor } from "./icon-color-preference";
 import { applyThemePalette } from "./theme-palette";
 import { sweepTheme } from "./theme-sweep";
 import { setWindowGlass } from "./window-glass";
@@ -234,6 +235,7 @@ export function syncAppearance(options: { windowGlass?: boolean; sweep?: boolean
   applyThemePalette(selectedThemePalette(preference));
   applyChatBackground(preference);
   applyAppFonts(preference);
+  syncIconColor();
   const showGlass = () => {
     if (options.windowGlass) setWindowGlass("transparent-window", preference.transparentWindow);
   };

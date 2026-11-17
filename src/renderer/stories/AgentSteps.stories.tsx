@@ -1,5 +1,9 @@
 import { AgentActivityIndicator } from "@openbot/ui/features/conversation/AgentActivity";
-import { type AgentStep, AgentStepsDisclosure } from "@openbot/ui/features/conversation/AgentSteps";
+import {
+  type AgentStep,
+  AgentStepsDisclosure,
+  AgentThinkingDialog,
+} from "@openbot/ui/features/conversation/AgentSteps";
 import { createSignal, onSettled } from "solid-js";
 import type { Meta, StoryObj } from "storybook-solidjs-vite";
 import { STORY_AGENTS } from "./fixtures";
@@ -161,5 +165,24 @@ export const FailedSteps: Story = {
         facts={{ durationMs: 42_000, failed: 2 }}
       />
     </div>
+  ),
+};
+
+/** The full thinking of a running turn (#3219): each thought in full, with its paragraphs. */
+export const FullThinkingLive: Story = {
+  render: () => (
+    <AgentThinkingDialog
+      open
+      onOpenChange={() => undefined}
+      live
+      steps={[
+        ...STEPS,
+        {
+          id: "t3",
+          kind: "thinking",
+          text: "The deep-work block needs three hours. Friday morning is free from 8 to 11.\n\nThe two overdue tasks are short, so they fit on Thursday afternoon before the weekly report.",
+        },
+      ]}
+    />
   ),
 };

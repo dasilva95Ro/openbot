@@ -3,8 +3,9 @@ import { countConversationMemoryChanges } from "@openbot/contracts/ipc";
 import type { JSX } from "@solidjs/web";
 import { createEffect, createMemo, createSignal, createUniqueId, For, onSettled, Show } from "solid-js";
 import { Badge } from "../../badge";
-import { Button } from "../../button";
-import { Brain, ChevronRight, Puzzle, Sparkles } from "../../icons";
+import { Button, IconButton } from "../../button";
+import { Dialog } from "../../complex";
+import { Brain, ChevronRight, Maximize2, Puzzle, Sparkles, X } from "../../icons";
 import { type TextValue, useText } from "../../text";
 import { prefersReducedMotion } from "../../utils";
 import { ActivityShine } from "./ActivityShine";
@@ -23,8 +24,15 @@ export type AgentStep =
   | { id: string; kind: "memory"; change: ConversationMemoryChange }
   | { id: string; kind: "memory-summary"; text: string };
 
-/** How tall the list grows before it scrolls, and before a live list glides to its newest step. */
-const STEPS_MAX_HEIGHT = 220;
+/** How tall the list grows before it scrolls. Keep it equal to `max-height` of `.agent-steps-viewport`. */
+const STEPS_MAX_HEIGHT = 320;
+
+/** A reader this close to the end of a live list still follows its newest step. */
+const FOLLOW_THRESHOLD_PX = 24;
+
+function isScrolledToEnd(element: HTMLElement): boolean {
+  return element.scrollHeight - element.scrollTop - element.clientHeight < FOLLOW_THRESHOLD_PX;
+}
 
 const MEMORY_ACTION_LABEL = {
   saved: "chat.steps.saved",
@@ -34,8 +42,9 @@ const MEMORY_ACTION_LABEL = {
 } as const;
 
 /**
- * The steps of a turn, in order. While the turn runs, `live` marks the newest step and the list
- * glides so that step stays at the bottom edge; after the turn the list scrolls.
+ * The steps of a turn, in order. The list scrolls when it is taller than its cap. While the turn
+ * runs, `live` marks the newest step and the list follows it, until the reader scrolls up to read an
+ * older step. Scrolling back to the end follows again.
  */
 export function AgentStepList(props: {
   steps: readonly AgentStep[];
@@ -47,10 +56,18 @@ export function AgentStepList(props: {
   const { t } = useText();
   const [contentHeight, setContentHeight] = createSignal(0);
   let content: HTMLOListElement | undefined;
+  let viewport: HTMLElement | undefined;
+  let following = true;
+  const followNewest = () => {
+    if (props.live && following && viewport) viewport.scrollTop = viewport.scrollHeight;
+  };
   onSettled(() => {
     const element = content;
     if (!element) return;
-    const observer = new ResizeObserver(() => setContentHeight(element.offsetHeight));
+    const observer = new ResizeObserver(() => {
+      setContentHeight(element.offsetHeight);
+      followNewest();
+    });
     observer.observe(element);
     return () => observer.disconnect();
   });
@@ -63,19 +80,21 @@ export function AgentStepList(props: {
     },
   );
   const capped = () => contentHeight() > STEPS_MAX_HEIGHT;
-  const scrolls = () => !props.live && capped();
-  const offset = () => (props.live && capped() ? STEPS_MAX_HEIGHT - contentHeight() : 0);
   return (
     <section
+      ref={viewport}
       id={props.id}
       class="agent-steps-viewport"
       aria-label={t("chat.steps.list")}
       data-capped={capped() ? "" : undefined}
-      data-scrolls={scrolls() ? "" : undefined}
+      data-scrolls={capped() ? "" : undefined}
       // A list that scrolls needs a keyboard stop of its own.
-      tabindex={scrolls() ? 0 : undefined}
+      tabindex={capped() ? 0 : undefined}
+      onScroll={() => {
+        if (viewport) following = isScrolledToEnd(viewport);
+      }}
     >
-      <ol ref={content} class="agent-steps-list" style={{ transform: `translateY(${offset()}px)` }}>
+      <ol ref={content} class="agent-steps-list">
         <For each={props.steps} keyed={(step) => step.id}>
           {(step, index) => (
             <li
@@ -299,28 +318,30 @@ export function AgentStepsDisclosure(props: {
   };
   return (
     <div class="agent-steps" data-open={open() ? "" : undefined}>
-      <Button
-        type="button"
-        variant="ghost"
-        class="agent-steps-header"
-        aria-expanded={expanded()}
-        aria-controls={controls()}
-        aria-haspopup={popup()}
-        onClick={activate}
-      >
-        <span class="agent-steps-summary">{stepsSummary(props.steps, text)}</span>
-        <Show when={props.facts}>
-          {(facts) => (
-            <>
-              <Show when={facts().failed > 0}>
-                <Badge class="agent-steps-failed">{text.t("chat.steps.failed", { count: facts().failed })}</Badge>
-              </Show>
-              <span class="agent-steps-duration">{turnTime(facts().durationMs)}</span>
-            </>
-          )}
-        </Show>
-        <ChevronRight class="agent-steps-chevron" aria-hidden="true" />
-      </Button>
+      <div class="agent-steps-row">
+        <Button
+          type="button"
+          variant="ghost"
+          class="agent-steps-header"
+          aria-expanded={expanded()}
+          aria-controls={controls()}
+          aria-haspopup={popup()}
+          onClick={activate}
+        >
+          <span class="agent-steps-summary">{stepsSummary(props.steps, text)}</span>
+          <Show when={props.facts}>
+            {(facts) => (
+              <>
+                <Show when={facts().failed > 0}>
+                  <Badge class="agent-steps-failed">{text.t("chat.steps.failed", { count: facts().failed })}</Badge>
+                </Show>
+                <span class="agent-steps-duration">{turnTime(facts().durationMs)}</span>
+              </>
+            )}
+          </Show>
+          <ChevronRight class="agent-steps-chevron" aria-hidden="true" />
+        </Button>
+      </div>
       <Show when={traceUsed() && props.trace}>
         {(trace) => {
           // The waterfall reads its spans many times for each change; this builds them once.
@@ -347,5 +368,134 @@ export function AgentStepsDisclosure(props: {
         </div>
       </Show>
     </div>
+  );
+}
+
+/** True when the steps have a thought or a progress line, which the full-thinking dialog shows. */
+export function hasThinking(steps: readonly AgentStep[] | undefined): boolean {
+  return steps?.some((step) => step.kind === "thinking" || step.kind === "progress") ?? false;
+}
+
+/**
+ * The button that opens the full thinking of a turn (#3219). The dialog is built when the button is
+ * first used, so a long chat with a row for each turn builds no dialogs.
+ */
+export function AgentThinkingButton(props: { steps: readonly AgentStep[]; live: boolean }) {
+  const { t } = useText();
+  const [open, setOpen] = createSignal(false);
+  const [used, setUsed] = createSignal(false);
+  return (
+    <>
+      <IconButton
+        label={t("chat.steps.fullThinking")}
+        variant="ghost"
+        size="icon-xs"
+        class="agent-thinking-open"
+        aria-haspopup="dialog"
+        onClick={() => {
+          setUsed(true);
+          setOpen(true);
+        }}
+      >
+        <Maximize2 aria-hidden="true" />
+      </IconButton>
+      <Show when={used()}>
+        <AgentThinkingDialog open={open()} onOpenChange={setOpen} steps={props.steps} live={props.live} />
+      </Show>
+    </>
+  );
+}
+
+/**
+ * Each thought of a turn in full, with its paragraphs, and the progress lines between them, in time
+ * order. While the turn runs, the dialog updates live and follows the newest text, until the reader
+ * scrolls up. Scrolling back to the end follows again.
+ */
+export function AgentThinkingDialog(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  steps: readonly AgentStep[];
+  live: boolean;
+}) {
+  const text = useText();
+  // A controlled dialog has no Kobalte trigger, so it keeps the element that opened it itself.
+  let opener: HTMLElement | undefined;
+  return (
+    <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay>
+          <Dialog.Content
+            as="div"
+            class="agent-thinking-dialog"
+            onOpenAutoFocus={() => {
+              const active = document.activeElement;
+              opener = active instanceof HTMLElement && active !== document.body ? active : undefined;
+            }}
+            onCloseAutoFocus={(event) => {
+              if (!opener?.isConnected) return;
+              event.preventDefault();
+              opener.focus({ preventScroll: true });
+            }}
+          >
+            <header class="agent-thinking-header">
+              <Dialog.Title as="h2" class="agent-thinking-title">
+                {text.t("chat.steps.fullThinkingTitle")}
+              </Dialog.Title>
+              <span class="agent-thinking-summary">{stepsSummary(props.steps, text)}</span>
+              <Show when={props.live}>
+                <Badge class="agent-thinking-live">{text.t("chat.steps.fullThinkingLive")}</Badge>
+              </Show>
+              <IconButton label={text.t("common.close")} variant="ghost" onClick={() => props.onOpenChange(false)}>
+                <X />
+              </IconButton>
+            </header>
+            <AgentThinkingTranscript steps={props.steps} live={props.live} />
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function AgentThinkingTranscript(props: { steps: readonly AgentStep[]; live: boolean }) {
+  const { t } = useText();
+  let body: HTMLElement | undefined;
+  let list: HTMLOListElement | undefined;
+  // A running turn opens at its newest text; a finished turn opens at its first step.
+  let following = true;
+  onSettled(() => {
+    const scroller = body;
+    const element = list;
+    if (!scroller || !element) return;
+    const follow = () => {
+      if (props.live && following) scroller.scrollTop = scroller.scrollHeight;
+    };
+    follow();
+    const observer = new ResizeObserver(follow);
+    observer.observe(element);
+    return () => observer.disconnect();
+  });
+  return (
+    <section
+      ref={body}
+      class="agent-thinking-body"
+      aria-label={t("chat.steps.list")}
+      // The transcript scrolls, so it needs a keyboard stop of its own.
+      tabindex={0}
+      onScroll={() => {
+        if (body) following = isScrolledToEnd(body);
+      }}
+    >
+      <ol ref={list} class="agent-steps-list">
+        <For each={props.steps} keyed={(step) => step.id}>
+          {(step) => (
+            <li class="agent-step" data-kind={step().kind}>
+              <StepIcon kind={step().kind} />
+              <StepBody step={step()} newest={false} />
+            </li>
+          )}
+        </For>
+      </ol>
+    </section>
   );
 }

@@ -54,6 +54,10 @@ export const messages = {
   "settings.chatBackdrop.description":
     "Uma cena, imagem ou GIF atrás de toda a janela neste dispositivo. Peça uma cena a um agente e depois escolha “Usar como fundo” na resposta dele.",
   "settings.chatBackdrop.none": "Nenhum",
+  "settings.iconColor.title": "Cor dos ícones",
+  "settings.iconColor.description":
+    "A cor dos ícones pequenos: barra lateral, ações ao lado de cada mensagem e menus, neste dispositivo.",
+  "settings.iconColor.default": "Padrão",
   "settings.chatBackdrop.pond": "Lago de carpas",
   "settings.chatBackdrop.jellyfish": "Águas-vivas",
   "settings.chatBackdrop.sunset": "Pôr do sol retrô",

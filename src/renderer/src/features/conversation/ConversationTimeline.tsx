@@ -12,6 +12,8 @@ import {
   type AgentStep,
   AgentStepsDisclosure,
   type AgentStepsTrace,
+  AgentThinkingDialog,
+  hasThinking,
 } from "@openbot/ui/features/conversation/AgentSteps";
 import { AttachmentCards } from "@openbot/ui/features/conversation/AttachmentCards";
 import { agentActivityExitDelay, agentActivityExitDuration } from "@openbot/ui/features/conversation/activity-timing";
@@ -268,6 +270,13 @@ export function ConversationTimeline() {
     return () => setDeleteTargetId(message.id);
   };
   const deleteMessage = (messageId: string) => props.onDeleteMessage?.(messageId) ?? Promise.resolve();
+  /** The answer whose full thinking the dialog shows (#3219). */
+  const [thinkingTargetId, setThinkingTargetId] = createSignal<string | null>(null);
+  /** An answer with thoughts or progress lines above it opens them in full from its menu. */
+  const thinkingAction = (message: AgentMessage) => {
+    if (message.streaming || !hasThinking(turnSteps.stepsAbove(message.id))) return;
+    return () => setThinkingTargetId(message.id);
+  };
   /** A finished message that the host stores can be pinned to the agent's chat. A channel has no pins yet. */
   const pinAction = (message: AgentMessage) => {
     if (!messagePins.available() || message.streaming || message.id.startsWith(PENDING_SEND_ID_PREFIX)) return;
@@ -1543,6 +1552,7 @@ export function ConversationTimeline() {
                   branchDisabled: Boolean(props.activeTurnId),
                   pin: pinAction(message() ?? initialMessage),
                   onUseAsBackdrop: backdropAction(message() ?? initialMessage),
+                  onShowThinking: thinkingAction(message() ?? initialMessage),
                   onDelete: deleteAction(message() ?? initialMessage),
                 });
                 /*
@@ -1878,6 +1888,18 @@ export function ConversationTimeline() {
         onDelete={deleteMessage}
         onClose={() => setDeleteTargetId(null)}
       />
+      <Show when={thinkingTargetId()}>
+        {(messageId) => (
+          <AgentThinkingDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) setThinkingTargetId(null);
+            }}
+            steps={turnSteps.stepsAbove(messageId()) ?? []}
+            live={false}
+          />
+        )}
+      </Show>
     </>
   );
 }

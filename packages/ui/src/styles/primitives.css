@@ -234,6 +234,21 @@
   color: var(--openbot-text-primary);
 }
 
+/* The Icon color setting (`icon-color-preference.ts` in the renderer) paints the neutral icons: those
+   of ghost and outline buttons, of the page rail, of the action row of a message, of menu items, and
+   of the steps of a turn. Lucide icons and the hand-drawn `ui-glyph-*` icons both count. It sets the
+   attribute only while the user has a colour, so the theme's colours stay otherwise. A danger item, a
+   filled button, a provider logo and an avatar keep their own colours. */
+:root[data-openbot-icon-color]
+  :is(.ui-button-variant-ghost, .ui-button-variant-outline, .window-rail-button, .message-action-button)
+  svg:is(.lucide, .ui-glyph-16, .ui-glyph-20),
+:root[data-openbot-icon-color]
+  :is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]):not(.ui-action-menu-danger)
+  > svg:is(.lucide, .ui-glyph-16, .ui-glyph-20),
+:root[data-openbot-icon-color] :is(.agent-step-icon, .agent-steps-chevron) {
+  color: var(--openbot-icon-color);
+}
+
 :where(.ui-button):focus-visible {
   outline: 0;
   box-shadow: var(--openbot-focus-ring);

@@ -24,6 +24,8 @@ import {
   type AgentStep,
   AgentStepsDisclosure,
   type AgentStepsFacts,
+  AgentThinkingDialog,
+  hasThinking,
 } from "@openbot/ui/features/conversation/AgentSteps";
 import {
   AttachmentCards,
@@ -500,6 +502,13 @@ export function AgentThreadView(props: AgentThreadViewProps) {
   };
   /** The message that the delete dialog asks about. */
   const [deleteTargetId, setDeleteTargetId] = createSignal<string | null>(null);
+  /** The answer whose full thinking the dialog shows (#3219). */
+  const [thinkingTargetId, setThinkingTargetId] = createSignal<string | null>(null);
+  /** An answer with thoughts or progress lines above it opens them in full from its menu. */
+  const thinkingAction = (message: AgentMessage) => {
+    if (message.streaming || !hasThinking(props.stepsAbove?.(message.id))) return undefined;
+    return () => setThinkingTargetId(message.id);
+  };
   const deleteAction = (message: AgentMessage) => {
     if (!props.onDeleteMessage || message.streaming) return undefined;
     if (props.canDeleteMessage && !props.canDeleteMessage(message)) return undefined;
@@ -624,6 +633,7 @@ export function AgentThreadView(props: AgentThreadViewProps) {
       branchDisabled: branchBusy(),
       pin: pinAction(message),
       onUseAsBackdrop: props.backdropAction?.(message),
+      onShowThinking: thinkingAction(message),
       onDelete: deleteAction(message),
     };
   }
@@ -1118,6 +1128,18 @@ export function AgentThreadView(props: AgentThreadViewProps) {
         onDelete={deleteMessage}
         onClose={() => setDeleteTargetId(null)}
       />
+      <Show when={thinkingTargetId()}>
+        {(messageId) => (
+          <AgentThinkingDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) setThinkingTargetId(null);
+            }}
+            steps={props.stepsAbove?.(messageId()) ?? []}
+            live={false}
+          />
+        )}
+      </Show>
     </>
   );
 }

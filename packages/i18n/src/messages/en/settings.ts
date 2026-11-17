@@ -52,6 +52,10 @@ export const messages = defineMessages("settings", {
   "settings.chatBackdrop.description":
     "A scene, picture or GIF behind the whole window on this device. Ask an agent to make a scene, then choose Use as backdrop on its reply.",
   "settings.chatBackdrop.none": "None",
+  "settings.iconColor.title": "Icon color",
+  "settings.iconColor.description":
+    "The color of the small icons: the sidebar, the actions beside each message and the menus, on this device.",
+  "settings.iconColor.default": "Default",
   "settings.chatBackdrop.pond": "Koi pond",
   "settings.chatBackdrop.jellyfish": "Jellyfish",
   "settings.chatBackdrop.sunset": "Retro sunset",

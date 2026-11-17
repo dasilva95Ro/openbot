@@ -8,7 +8,7 @@ import { ChevronDown } from "../../icons";
 import { useText } from "../../text";
 import { AgentAvatar } from "../agents/AgentAvatar";
 import { ActivityShine } from "./ActivityShine";
-import { type AgentStep, AgentStepList } from "./AgentSteps";
+import { type AgentStep, AgentStepList, AgentThinkingButton, hasThinking } from "./AgentSteps";
 
 /**
  * The English source of each label. A label is an identifier here: render it with
@@ -222,6 +222,9 @@ export function AgentActivityBody(props: {
         aria-label={t("chat.activity.current")}
       >
         {props.children}
+        <Show when={hasThinking(props.steps)}>
+          <AgentThinkingButton steps={props.steps ?? []} live={props.live} />
+        </Show>
         <Show when={hasSteps()}>
           <Button
             type="button"

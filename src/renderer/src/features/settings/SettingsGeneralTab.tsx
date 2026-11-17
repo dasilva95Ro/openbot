@@ -30,6 +30,7 @@ import { ChatBackgroundSetting } from "@openbot/ui/features/settings/ChatBackgro
 import { ChatBubbleStyleSelect } from "@openbot/ui/features/settings/ChatBubbleStyleSelect";
 import { OwnChatColorTrigger } from "@openbot/ui/features/settings/ChatColorSetting";
 import { FontSelect } from "@openbot/ui/features/settings/FontSelect";
+import { IconColorTrigger } from "@openbot/ui/features/settings/IconColorSetting";
 import { LanguageSelect } from "@openbot/ui/features/settings/LanguageSelect";
 import { LogoColorPicker } from "@openbot/ui/features/settings/LogoColorPicker";
 import { SendShortcutSelect } from "@openbot/ui/features/settings/SendShortcutSelect";
@@ -40,6 +41,7 @@ import { useInstalledFonts } from "../../app-fonts";
 import { useAppearanceChoice } from "../../appearance-choice";
 import { setChatBubbleStyle, useChatBubbleStyle } from "../../chat-bubble-style-preference";
 import { useI18n } from "../../i18n-context";
+import { setIconColor, useIconColor } from "../../icon-color-preference";
 import { useInterfaceSizeChoice } from "../../interface-size";
 import { useLayout } from "../../layout";
 import { useLogoColorChoice } from "../../logo-color";
@@ -262,6 +264,7 @@ function AppearanceRows(props: SettingsGeneralTabProps) {
   const appearance = useAppearanceChoice();
   const logoColor = useLogoColorChoice();
   const bubbleStyle = useChatBubbleStyle();
+  const iconColor = useIconColor();
   const interfaceSize = useInterfaceSizeChoice();
   const installedFonts = useInstalledFonts();
   const interfaceFontTitleId = `settings-interface-font-${createUniqueId()}`;
@@ -355,6 +358,15 @@ function AppearanceRows(props: SettingsGeneralTabProps) {
             </ItemContent>
             <ItemActions>
               <ChatBackdropSetting mount={props.selectMount} />
+            </ItemActions>
+          </Item>
+          <Item data-settings-row="settings.iconColor.title" class="settings-modal-row">
+            <ItemContent>
+              <ItemTitle>{i18n.t("settings.iconColor.title")}</ItemTitle>
+              <ItemDescription>{i18n.t("settings.iconColor.description")}</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <IconColorTrigger value={iconColor()} onChange={setIconColor} />
             </ItemActions>
           </Item>
         </ItemGroup>

@@ -18,6 +18,7 @@ import {
   LoaderCircle,
   Pin,
   PinOff,
+  Sparkles,
   Trash2,
   Wallpaper,
 } from "@openbot/ui";
@@ -1201,6 +1202,8 @@ export interface MessageMenuItemsProps {
   pin?: { pinned: boolean; onToggle: () => void } | undefined;
   /** Puts the page, picture or GIF of this message behind the window. Without it, the menu has no such item. */
   onUseAsBackdrop?: (() => void) | undefined;
+  /** Opens the full thinking of the turn that wrote this answer. Without it, the menu has no such item. */
+  onShowThinking?: (() => void) | undefined;
   /** Asks to delete this message. Without it, the menu has no such item. */
   onDelete?: (() => void) | undefined;
 }
@@ -1227,6 +1230,14 @@ export function MessageMenuItems(props: MessageMenuItemsProps) {
         <CopyIcon />
         <span>{t("chat.menu.copy")}</span>
       </ContextMenu.Item>
+      <Show when={props.onShowThinking}>
+        {(onShowThinking) => (
+          <ContextMenu.Item onSelectAfterClose={onShowThinking()}>
+            <Sparkles aria-hidden="true" />
+            <span>{t("chat.steps.fullThinking")}</span>
+          </ContextMenu.Item>
+        )}
+      </Show>
       <Show when={props.reactions !== false}>
         <ContextMenu.Sub>
           <ContextMenu.SubTrigger>

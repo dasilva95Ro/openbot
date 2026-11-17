@@ -281,6 +281,7 @@
     "./features/settings/ChatBackdropSelect": "./src/features/settings/ChatBackdropSelect.tsx",
     "./features/settings/ChatBackgroundSetting": "./src/features/settings/ChatBackgroundSetting.tsx",
     "./features/settings/ChatColorSetting": "./src/features/settings/ChatColorSetting.tsx",
+    "./features/settings/IconColorSetting": "./src/features/settings/IconColorSetting.tsx",
     "./features/settings/ChatBubbleStyleSelect": "./src/features/settings/ChatBubbleStyleSelect.tsx",
     "./features/settings/SoundChoiceSelect": "./src/features/settings/SoundChoiceSelect.tsx",
     "./features/settings/NotificationMatrix": "./src/features/settings/NotificationMatrix.tsx",
