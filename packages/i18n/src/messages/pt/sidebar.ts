@@ -149,6 +149,20 @@ export const messages = {
     "Isso para o canal. O histórico continua em Canais excluídos, somente para visualização. Você pode restaurá-lo de lá. Os agentes membros são mantidos.",
   "sidebar.delete.sectionDescription":
     "Os chats e as pastas desta pasta sobem um nível. Nenhum agente ou canal é excluído.",
+  "sidebar.select.action": "Selecionar",
+  "sidebar.select.remove": "Desmarcar",
+  "sidebar.select.selected": "Selecionado",
+  "sidebar.select.bar": "Chats selecionados",
+  "sidebar.select.count": { one: "{count} selecionado", other: "{count} selecionados" },
+  "sidebar.select.deleteTitle": { one: "Excluir {count} chat?", other: "Excluir {count} chats?" },
+  "sidebar.select.agentsDescription": {
+    one: "{count} agente será excluído. Dá para desfazer por alguns segundos.",
+    other: "{count} agentes serão excluídos. Dá para desfazer por alguns segundos.",
+  },
+  "sidebar.select.channelsDescription": {
+    one: "{count} canal vai para Canais excluídos, onde pode ser restaurado.",
+    other: "{count} canais vão para Canais excluídos, onde podem ser restaurados.",
+  },
   "sidebar.delete.failed": "Não foi possível excluir este item. Tente novamente.",
   "sidebar.announce.updateFailed": "Não foi possível atualizar a barra lateral. Tente novamente.",
   "sidebar.announce.movedToPosition": "{name} movido para a posição {position} de {total}.",

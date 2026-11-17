@@ -8,7 +8,7 @@
  */
 
 import type { ChannelSummary } from "@openbot/contracts/ipc";
-import { Badge, buttonVariants, ContextMenu } from "@openbot/ui";
+import { Badge, buttonVariants, Check, ContextMenu } from "@openbot/ui";
 import type { JSX } from "@solidjs/web";
 import { createMemo, createSignal, Show } from "solid-js";
 import { useText } from "../../text";
@@ -23,11 +23,14 @@ import { useSidebarScope } from "./sidebar-scope";
 /** `waiting` is set by the "Needs you" and "Unread" groups, as on `SidebarAgentRow`. */
 export function SidebarChannelRow(rowProps: { channel: ChannelSummary; waiting?: boolean }) {
   const {
+    chatIsSelected,
     dragOffset,
     draggedChatId,
     endChatDragging,
     chatsDraggable,
+    handleRowSelectClick,
     props,
+    selectingChats,
     sidebarClickIsSuppressed,
     startChatDragging,
   } = useSidebarScope();
@@ -60,6 +63,8 @@ export function SidebarChannelRow(rowProps: { channel: ChannelSummary; waiting?:
   // The wait label already reads the question, so the label does not say it twice, unless the
   // preview also says that work runs.
   const labelPreview = () => (wait()?.detail && rowProps.channel.activeTasks === 0 ? "" : `. ${preview()}`);
+  const selected = () => chatIsSelected(rowProps.channel.id);
+  const selectedLabel = () => (selected() ? `. ${t("sidebar.select.selected")}` : "");
   const row = (): JSX.Element => (
     <ContextMenu.Root modal={false} onOpenChange={setMenuOpen}>
       <ContextMenu.Trigger
@@ -71,12 +76,16 @@ export function SidebarChannelRow(rowProps: { channel: ChannelSummary; waiting?:
           {
             "agent-row-active": active(),
             "sidebar-agent-row-dragging": draggedChatId() === rowProps.channel.id,
+            "sidebar-row-selected": selected(),
+            "sidebar-row-selecting": selectingChats() && !rowProps.channel.archived,
           },
         ]}
-        aria-label={`${rowProps.channel.name}${title() ? `, ${title()}` : ""}${labelPreview()}${waitLabel()}`}
+        aria-label={`${rowProps.channel.name}${title() ? `, ${title()}` : ""}${labelPreview()}${waitLabel()}${selectedLabel()}`}
         aria-pressed={active() ? "true" : "false"}
         data-cuelume-navigate=""
+        data-select-id={rowProps.channel.archived ? undefined : rowProps.channel.id}
         onClick={(event: MouseEvent) => {
+          if (handleRowSelectClick(event, rowProps.channel.id)) return;
           if (!sidebarClickIsSuppressed(event)) props.onSelectChannel?.(rowProps.channel.id);
         }}
       >
@@ -110,6 +119,11 @@ export function SidebarChannelRow(rowProps: { channel: ChannelSummary; waiting?:
             {preview()}
           </span>
         </span>
+        <Show when={selectingChats() && !rowProps.channel.archived}>
+          <span class="sidebar-select-mark" data-checked={selected() ? "" : undefined} aria-hidden="true">
+            <Check />
+          </span>
+        </Show>
         <Show when={rowProps.channel.unreadCount > 0}>
           <span class="sr-only">{t("sidebar.channel.unread", { count: rowProps.channel.unreadCount })}</span>
         </Show>

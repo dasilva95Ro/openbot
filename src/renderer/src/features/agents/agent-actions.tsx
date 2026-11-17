@@ -249,44 +249,28 @@ const AgentActions = createSimpleContext({
      * The agent leaves the roster at once, and a toast offers Undo. Main deletes the agent only when the
      * time is over, so an undo has nothing to restore. If the app quits before then, the agent stays.
      */
-    async function deleteAgent(agentId: string) {
-      if (agentSetupOpen() && creatingAgent()) return;
-      if (pendingDeletes.has(agentId)) return;
+    /** The agent to open after `leaving` go: the first other agent that the user did not hide. */
+    function agentAfterDelete(leaving: ReadonlySet<string>): string {
+      // Read before the roster changes: a read after a write returns the old value until the flush.
+      const others = agentList().filter((candidate) => !leaving.has(candidate.id));
+      const userHidden = userHiddenAgentIds();
+      return (others.find((candidate) => !userHidden.has(candidate.id)) ?? others[0])?.id ?? "";
+    }
+
+    /**
+     * One agent's part of a delete: it leaves the roster now. `showAgent` puts it back, and
+     * `commitDelete` deletes it in main. The caller owns the undo time and the toast.
+     */
+    function takeAgentForDelete(agentId: string, serverId: string) {
       const agent = agentList().find((candidate) => candidate.id === agentId);
-      if (!agent) return;
-      const serverId = activeServerId();
+      if (!agent) return null;
       const analytics = desktopAnalytics.scope();
       const properties = analyticsAgentProperties(agentId);
       const marketplaceAgent = Boolean(agent.marketplaceSource);
-      const wasActive = activeAgentId() === agentId;
-      // Read before the roster changes: a read after a write returns the old value until the flush.
-      const others = agentList().filter((candidate) => candidate.id !== agentId);
-      const userHidden = userHiddenAgentIds();
-      const nextAgentId = (others.find((candidate) => !userHidden.has(candidate.id)) ?? others[0])?.id ?? "";
       const hidden = hideAgent(agentId);
-      if (!hidden) return;
+      if (!hidden) return null;
       const showAgent: () => void = hidden;
-      if (wasActive) setActiveAgentId(nextAgentId);
       setSettingsRequest((current) => (current?.agentId === agentId ? null : current));
-
-      const toastId = `agent-delete-${serverId}-${agentId}`;
-      let settled = false;
-      /** Undo and delete each end the same wait, so only the first of them runs. */
-      function settle(): boolean {
-        if (settled) return false;
-        settled = true;
-        countdown.stop();
-        pendingDeletes.delete(agentId);
-        // A scope cleanup can call this, and a write to the Toaster from there stops the reactive system.
-        queueMicrotask(() => toast.dismiss(toastId));
-        return true;
-      }
-
-      function undo(): void {
-        if (!settle() || !scopeIsCurrent()) return;
-        showAgent();
-        if (wasActive) setActiveAgentId(agentId);
-      }
 
       function forgetDeletedAgent(): void {
         analytics.track("agent_action", { action: "delete", result: "succeeded", ...(properties ?? {}) });
@@ -304,8 +288,7 @@ const AgentActions = createSimpleContext({
         setPendingPrompts((current) => withoutAttention(current, (event) => attentionAgentId(event) === agentId));
       }
 
-      async function commit(): Promise<void> {
-        if (!settle()) return;
+      async function commitDelete(): Promise<void> {
         // Before the wait: a server switch reads the stored pins when the next scope starts. If the delete
         // fails, the agent comes back without its pin.
         removePinnedSidebarItemEverywhere({ kind: "agent", id: agentId });
@@ -348,16 +331,77 @@ const AgentActions = createSimpleContext({
         }
       }
 
-      const countdown = startUndoCountdown(() => void commit());
-      pendingDeletes.set(agentId, () => void commit());
-      toast(() => <AgentDeleteUndoToast agent={agent} countdown={countdown} onUndo={undo} />, {
-        id: toastId,
-        duration: Number.POSITIVE_INFINITY,
-        unstyled: true,
-        closeButton: false,
-        class: "agent-delete-undo-toast-host",
-        onDismiss: () => void commit(),
+      return { agent, showAgent, commitDelete };
+    }
+
+    /**
+     * The agents leave the roster at once, and one toast offers Undo for all of them. Main deletes them
+     * only when the time is over, so an undo has nothing to restore. If the app quits before then, the
+     * agents stay.
+     */
+    async function deleteAgents(agentIds: readonly string[]) {
+      if (agentSetupOpen() && creatingAgent()) return;
+      const ids = [...new Set(agentIds)].filter(
+        (agentId) => !pendingDeletes.has(agentId) && agentList().some((candidate) => candidate.id === agentId),
+      );
+      if (ids.length === 0) return;
+      const serverId = activeServerId();
+      const leaving = new Set(ids);
+      const previousActiveId = activeAgentId();
+      const wasActive = leaving.has(previousActiveId);
+      const nextAgentId = wasActive ? agentAfterDelete(leaving) : previousActiveId;
+      const taken = ids.flatMap((agentId) => {
+        const part = takeAgentForDelete(agentId, serverId);
+        return part ? [{ agentId, ...part }] : [];
       });
+      const first = taken[0];
+      if (!first) return;
+      if (wasActive) setActiveAgentId(nextAgentId);
+
+      const toastId = `agent-delete-${serverId}-${taken.map((part) => part.agentId).join("-")}`;
+      let settled = false;
+      /** Undo and delete each end the same wait, so only the first of them runs. */
+      function settle(): boolean {
+        if (settled) return false;
+        settled = true;
+        countdown.stop();
+        for (const part of taken) pendingDeletes.delete(part.agentId);
+        // A scope cleanup can call this, and a write to the Toaster from there stops the reactive system.
+        queueMicrotask(() => toast.dismiss(toastId));
+        return true;
+      }
+
+      function undo(): void {
+        if (!settle() || !scopeIsCurrent()) return;
+        // In reverse, so that each agent goes back to the place that it had before the others left.
+        for (const part of [...taken].reverse()) part.showAgent();
+        if (wasActive) setActiveAgentId(previousActiveId);
+      }
+
+      async function commit(): Promise<void> {
+        if (!settle()) return;
+        // One at a time: each delete writes the sidebar layout of the server.
+        for (const part of taken) await part.commitDelete();
+      }
+
+      const countdown = startUndoCountdown(() => void commit());
+      for (const part of taken) pendingDeletes.set(part.agentId, () => void commit());
+      toast(
+        () => <AgentDeleteUndoToast agent={first.agent} count={taken.length} countdown={countdown} onUndo={undo} />,
+        {
+          id: toastId,
+          duration: Number.POSITIVE_INFINITY,
+          unstyled: true,
+          closeButton: false,
+          class: "agent-delete-undo-toast-host",
+          onDismiss: () => void commit(),
+        },
+      );
+    }
+
+    /** One agent: the same as `deleteAgents`, with a toast that names it. */
+    async function deleteAgent(agentId: string) {
+      await deleteAgents([agentId]);
     }
 
     /** The Undo toasts of hides on this server. A server switch removes them with this scope. */
@@ -451,6 +495,7 @@ const AgentActions = createSimpleContext({
       duplicateSection,
       duplicatingSectionIds,
       deleteAgent,
+      deleteAgents,
       setAgentHiddenByUser,
       setAgentMuted,
     };

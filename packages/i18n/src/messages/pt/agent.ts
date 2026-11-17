@@ -47,6 +47,7 @@ export const messages = {
   "agent.setup.suggestion.learningCoach.purpose":
     "Explicar temas difíceis com clareza e criar planos de estudo que combinem com meu ritmo e meus objetivos.",
   "agent.deleteUndo.title": "{name} excluído",
+  "agent.deleteUndo.titleMany": { one: "{count} agente excluído", other: "{count} agentes excluídos" },
   "agent.deleteUndo.action": "Desfazer",
   "agent.dock.label": "Dock de agentes",
   "agent.dock.chatWith": "Conversar com {name}",

@@ -32,3 +32,64 @@
 .sidebar-history-button > svg:dir(rtl) {
   transform: scaleX(-1);
 }
+
+/* Bulk delete: a picked row, the mark on its face, and the bar under the list (`SidebarSelectionBar`). */
+.agent-row.sidebar-row-selected {
+  background: var(--openbot-accent-soft);
+}
+
+/* While chats are picked, the mark sits at the end of the preview line, under the time, and the
+   preview leaves room for it. */
+.agent-row.sidebar-row-selecting {
+  position: relative;
+}
+
+.agent-row.sidebar-row-selecting .agent-row-preview {
+  padding-inline-end: calc(var(--openbot-icon-sm) + var(--openbot-space-2));
+}
+
+.sidebar-select-mark {
+  position: absolute;
+  inset-inline-end: var(--openbot-space-2);
+  bottom: var(--openbot-space-2);
+  display: grid;
+  width: var(--openbot-icon-sm);
+  height: var(--openbot-icon-sm);
+  place-items: center;
+  border: 1px solid var(--openbot-border-strong);
+  border-radius: var(--openbot-radius-pill);
+  background: var(--openbot-bg-sidebar);
+  color: transparent;
+}
+
+.sidebar-select-mark[data-checked] {
+  border-color: var(--openbot-accent);
+  background: var(--openbot-accent);
+  color: var(--openbot-text-on-accent);
+}
+
+.sidebar-select-mark svg {
+  width: var(--openbot-icon-xs);
+  height: var(--openbot-icon-xs);
+}
+
+.sidebar-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--openbot-space-2);
+  margin: var(--openbot-space-2);
+  border: 1px solid var(--openbot-border);
+  border-radius: var(--openbot-radius-md);
+  padding: var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-2) var(--openbot-space-3);
+  background: var(--openbot-bg-surface-raised);
+}
+
+.sidebar-selection-count {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--openbot-text-sm);
+  font-weight: var(--openbot-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -47,6 +47,7 @@ export const messages = defineMessages("agent", {
   "agent.setup.suggestion.learningCoach.purpose":
     "Explain difficult topics clearly and build study plans that match my pace and goals.",
   "agent.deleteUndo.title": "{name} deleted",
+  "agent.deleteUndo.titleMany": { one: "{count} agent deleted", other: "{count} agents deleted" },
   "agent.deleteUndo.action": "Undo",
   "agent.dock.label": "Agent dock",
   "agent.dock.chatWith": "Chat with {name}",

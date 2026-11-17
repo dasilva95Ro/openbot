@@ -3,6 +3,7 @@ import { SidebarDialogs } from "./SidebarDialogs";
 import { SidebarFrame } from "./SidebarFrame";
 import { SidebarNav } from "./SidebarNav";
 import { SidebarSearch } from "./SidebarSearch";
+import { SidebarSelectionBar } from "./SidebarSelectionBar";
 import { SidebarTopbar } from "./SidebarTopbar";
 import { SidebarViewSwitch } from "./SidebarViewSwitch";
 import { createSidebarScope, SidebarScopeContext } from "./sidebar-scope";
@@ -22,6 +23,10 @@ export function Sidebar(props: SidebarProps) {
         </Show>
 
         <SidebarNav />
+
+        <Show when={!props.compact}>
+          <SidebarSelectionBar />
+        </Show>
 
         <Show when={!props.compact}>{props.footer}</Show>
 

@@ -1,7 +1,7 @@
 /** The right-click menu on a channel, in the pinned strip and in a section alike. */
 
 import type { ChannelSummary } from "@openbot/contracts/ipc";
-import { ContextMenu, Hash, Pin, PinOff, RotateCcw } from "@openbot/ui";
+import { ContextMenu, Hash, ListChecks, Pin, PinOff, RotateCcw } from "@openbot/ui";
 import { Show } from "solid-js";
 import { useText } from "../../text";
 import { DeleteIcon, EditIcon } from "./SidebarIcons";
@@ -10,7 +10,7 @@ import type { SidebarPinnedItem } from "./sidebar-pins";
 import { useSidebarScope } from "./sidebar-scope";
 
 export function SidebarChannelContextMenu(menuProps: { channel: ChannelSummary; pinned: boolean }) {
-  const { openDelete, props } = useSidebarScope();
+  const { canSelectChat, chatIsSelected, openDelete, props, toggleChatSelected } = useSidebarScope();
   const { t } = useText();
   const ref = (): SidebarPinnedItem => ({ kind: "channel", id: menuProps.channel.id });
   return (
@@ -36,6 +36,14 @@ export function SidebarChannelContextMenu(menuProps: { channel: ChannelSummary; 
           <EditIcon />
           <span>{t("sidebar.channelMenu.edit")}</span>
         </ContextMenu.Item>
+        <Show when={canSelectChat(menuProps.channel.id)}>
+          <ContextMenu.Item onSelect={() => toggleChatSelected(menuProps.channel.id)}>
+            <ListChecks class="agent-context-icon size-4" aria-hidden="true" />
+            <span>
+              {chatIsSelected(menuProps.channel.id) ? t("sidebar.select.remove") : t("sidebar.select.action")}
+            </span>
+          </ContextMenu.Item>
+        </Show>
         <Show when={props.onDeleteChannel}>
           <ContextMenu.Separator />
           {/* The host refuses to delete a channel while a task runs there: the user stops it first. */}

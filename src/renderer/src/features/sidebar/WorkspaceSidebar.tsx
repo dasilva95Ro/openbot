@@ -97,6 +97,7 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
     duplicateSection,
     duplicatingSectionIds,
     deleteAgent,
+    deleteAgents,
     setAgentHiddenByUser,
     setAgentMuted,
   } = useAgentActions();
@@ -314,6 +315,7 @@ export function WorkspaceSidebar(props: { peopleEnabled: boolean }) {
         duplicatingAgentIds={duplicatingAgentIds()}
         onDuplicateAgent={duplicateAgent}
         onDeleteAgent={deleteAgent}
+        onDeleteAgents={deleteAgents}
         userHiddenAgents={userHiddenAgents()}
         userHiddenAgentsWork={userHiddenAgentsWork()}
         unreadAgentIds={unreadAgentIds()}

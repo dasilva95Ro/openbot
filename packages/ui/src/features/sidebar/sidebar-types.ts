@@ -152,6 +152,8 @@ export interface SidebarProps {
   duplicatingAgentIds?: ReadonlySet<string> | undefined;
   onDuplicateAgent?: ((agentId: string) => Promise<void>) | undefined;
   onDeleteAgent: (agentId: string) => Promise<void>;
+  /** Deletes several agents with one Undo. Without it, a bulk delete deletes them one at a time. */
+  onDeleteAgents?: ((agentIds: string[]) => Promise<void>) | undefined;
   /**
    * The agents that a user hid on this server (`agent-hidden-v1`). They leave their sections and the
    * pinned strip, and show in the "Hidden" group at the end of the list. Each one keeps its section

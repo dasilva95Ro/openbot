@@ -8,7 +8,7 @@
  * hidden agent, it shows when the user hid it in place of the last message and the time.
  */
 
-import { AppWindow, Badge, buttonVariants, Clock3, ContextMenu, Lock } from "@openbot/ui";
+import { AppWindow, Badge, buttonVariants, Check, Clock3, ContextMenu, Lock } from "@openbot/ui";
 import type { JSX } from "@solidjs/web";
 import { createSignal, Show } from "solid-js";
 import type { AgentProfile } from "../../data";
@@ -29,11 +29,14 @@ import { useSidebarScope } from "./sidebar-scope";
  */
 export function SidebarAgentRow(rowProps: { agent: AgentProfile; waiting?: boolean; userHidden?: boolean }) {
   const {
+    chatIsSelected,
     dragOffset,
     draggedChatId,
     endChatDragging,
     chatsDraggable,
+    handleRowSelectClick,
     props,
+    selectingChats,
     sidebarClickIsSuppressed,
     startChatDragging,
     userHiddenSince,
@@ -88,6 +91,8 @@ export function SidebarAgentRow(rowProps: { agent: AgentProfile; waiting?: boole
       : "";
   };
   const routineLabel = () => (state()?.kind === "routine" || limit() ? stateLabel() : "");
+  const selected = () => chatIsSelected(rowProps.agent.id);
+  const selectedLabel = () => (selected() ? `. ${t("sidebar.select.selected")}` : "");
   // In the full sidebar, only a waiting row has a tooltip, so the rows in the sections do not each
   // carry one. The compact sidebar shows only the avatar, so each row names its agent.
   const row = (): JSX.Element => (
@@ -102,13 +107,17 @@ export function SidebarAgentRow(rowProps: { agent: AgentProfile; waiting?: boole
           {
             "agent-row-active": props.activeAgentId === rowProps.agent.id,
             "sidebar-agent-row-dragging": draggedChatId() === rowProps.agent.id,
+            "sidebar-row-selected": selected(),
+            "sidebar-row-selecting": selectingChats(),
           },
         ]}
-        aria-label={`${rowProps.agent.name}${title() ? `, ${title()}` : ""}${accessLabel()}${windowLabel()}${labelDetail()}${stateLabel() ? `. ${stateLabel()}` : ""}`}
+        aria-label={`${rowProps.agent.name}${title() ? `, ${title()}` : ""}${accessLabel()}${windowLabel()}${labelDetail()}${stateLabel() ? `. ${stateLabel()}` : ""}${selectedLabel()}`}
         title={props.compact ? undefined : routineLabel() || undefined}
         aria-pressed={props.activeAgentId === rowProps.agent.id ? "true" : "false"}
         data-cuelume-navigate=""
+        data-select-id={rowProps.agent.id}
         onClick={(event: MouseEvent) => {
+          if (handleRowSelectClick(event, rowProps.agent.id)) return;
           if (!sidebarClickIsSuppressed(event)) props.onSelectAgent(rowProps.agent.id);
         }}
       >
@@ -171,6 +180,11 @@ export function SidebarAgentRow(rowProps: { agent: AgentProfile; waiting?: boole
             {detail()}
           </span>
         </span>
+        <Show when={selectingChats()}>
+          <span class="sidebar-select-mark" data-checked={selected() ? "" : undefined} aria-hidden="true">
+            <Check />
+          </span>
+        </Show>
         <Show when={state()}>
           {(state) => <span class="sr-only">{sidebarAgentStateLabel(state(), t, format)}</span>}
         </Show>

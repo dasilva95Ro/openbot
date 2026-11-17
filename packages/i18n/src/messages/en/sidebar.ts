@@ -145,6 +145,20 @@ export const messages = defineMessages("sidebar", {
     "This stops the channel. Its history stays in Deleted channels for preview only. You can restore it from there. Member agents are kept.",
   "sidebar.delete.sectionDescription":
     "The chats and folders in this folder move up one level. No agent or channel is deleted.",
+  "sidebar.select.action": "Select",
+  "sidebar.select.remove": "Unselect",
+  "sidebar.select.selected": "Selected",
+  "sidebar.select.bar": "Selected chats",
+  "sidebar.select.count": { one: "{count} selected", other: "{count} selected" },
+  "sidebar.select.deleteTitle": { one: "Delete {count} chat?", other: "Delete {count} chats?" },
+  "sidebar.select.agentsDescription": {
+    one: "{count} agent is deleted. You can undo it for a few seconds.",
+    other: "{count} agents are deleted. You can undo it for a few seconds.",
+  },
+  "sidebar.select.channelsDescription": {
+    one: "{count} channel moves to Deleted channels, where you can restore it.",
+    other: "{count} channels move to Deleted channels, where you can restore them.",
+  },
   "sidebar.delete.failed": "Could not delete this item. Try again.",
   "sidebar.announce.updateFailed": "Could not update the sidebar. Try again.",
   "sidebar.announce.movedToPosition": "Moved {name} to position {position} of {total}.",

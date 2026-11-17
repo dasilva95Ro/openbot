@@ -17,6 +17,7 @@ import { createSidebarDataStore } from "./stores/data-store";
 import { createSidebarDragStateStore } from "./stores/drag-state-store";
 import { createSidebarLayoutActions } from "./stores/layout-actions";
 import { createSidebarPendingStore } from "./stores/pending-store";
+import { createSidebarSelectionStore } from "./stores/selection-store";
 
 export function createSidebarScope(props: SidebarProps) {
   const layoutMutable = () => props.layoutMutable !== false;
@@ -113,6 +114,7 @@ export function createSidebarScope(props: SidebarProps) {
     startCreateSectionEditor(agentId, parentId);
   };
   let agentList: HTMLElement | undefined;
+  const selection = createSidebarSelectionStore({ props, listElement: () => agentList });
   const foldersSupported = () => props.foldersSupported === true && layoutMutable();
   const dragFolders = () =>
     foldersSupported() ? { canNest: sectionCanNest, isInside: sectionIsInside, parent: sectionParent } : null;
@@ -235,6 +237,7 @@ export function createSidebarScope(props: SidebarProps) {
    */
   return {
     agentThreadsOpen,
+    ...selection,
     assignChatSection,
     cancelSectionEditor,
     closeDelete,

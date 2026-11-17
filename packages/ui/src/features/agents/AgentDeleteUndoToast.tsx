@@ -55,6 +55,8 @@ export function startUndoCountdown(onExpire: () => void, durationMs = AGENT_DELE
 
 interface AgentDeleteUndoToastProps {
   agent: Pick<AgentProfile, "name" | "title" | "avatarSeed" | "avatarHue" | "avatarUrl">;
+  /** How many agents the delete takes. With more than one, the toast counts them and shows the face of `agent`. */
+  count?: number;
   countdown: UndoCountdown;
   onUndo: () => void;
 }
@@ -80,8 +82,14 @@ export function AgentDeleteUndoToast(props: AgentDeleteUndoToastProps) {
     >
       <AgentAvatar agent={props.agent} motion="idle" class="agent-delete-undo-toast-avatar" />
       <div class="agent-delete-undo-toast-text">
-        <strong class="agent-delete-undo-toast-title">{t("agent.deleteUndo.title", { name: props.agent.name })}</strong>
-        {props.agent.title && <span class="agent-delete-undo-toast-detail">{props.agent.title}</span>}
+        <strong class="agent-delete-undo-toast-title">
+          {(props.count ?? 1) > 1
+            ? t("agent.deleteUndo.titleMany", { count: props.count ?? 1 })
+            : t("agent.deleteUndo.title", { name: props.agent.name })}
+        </strong>
+        {(props.count ?? 1) === 1 && props.agent.title && (
+          <span class="agent-delete-undo-toast-detail">{props.agent.title}</span>
+        )}
       </div>
       <div class="ui-toast-card-actions agent-delete-undo-toast-actions">
         <Button type="button" variant="default" size="sm" onClick={() => props.onUndo()}>

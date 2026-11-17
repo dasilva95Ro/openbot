@@ -11,6 +11,7 @@ import {
   CircleDot,
   ContextMenu,
   Copy,
+  ListChecks,
   MessageCirclePlus,
   Moon,
   Pin,
@@ -27,7 +28,7 @@ import { useSidebarScope } from "./sidebar-scope";
 
 /** `userHidden` swaps the hide item for a restore item that names the section the agent goes back to. */
 export function SidebarAgentContextMenu(menuProps: { agent: AgentProfile; pinned: boolean; userHidden?: boolean }) {
-  const { customSectionById, openDelete, props } = useSidebarScope();
+  const { canSelectChat, chatIsSelected, customSectionById, openDelete, props, toggleChatSelected } = useSidebarScope();
   const { t } = useText();
   const ref = (): SidebarPinnedItem => ({ kind: "agent", id: menuProps.agent.id });
   const unread = () => props.unreadAgentIds?.has(menuProps.agent.id) ?? false;
@@ -119,6 +120,12 @@ export function SidebarAgentContextMenu(menuProps: { agent: AgentProfile; pinned
           <ContextMenu.Item onSelectAfterClose={() => props.onRestoreAgent?.(menuProps.agent.id)}>
             <RotateCcw class="agent-context-icon size-4" aria-hidden="true" />
             <span>{restoreLabel()}</span>
+          </ContextMenu.Item>
+        </Show>
+        <Show when={canSelectChat(menuProps.agent.id)}>
+          <ContextMenu.Item onSelect={() => toggleChatSelected(menuProps.agent.id)}>
+            <ListChecks class="agent-context-icon size-4" aria-hidden="true" />
+            <span>{chatIsSelected(menuProps.agent.id) ? t("sidebar.select.remove") : t("sidebar.select.action")}</span>
           </ContextMenu.Item>
         </Show>
         <Show when={props.deleteSupported !== false}>
